@@ -33,10 +33,22 @@ The data file was unzipped into the C:/Users/judson/Documents/R/dataScienceCours
 
 This file was loaded into R as such:
 
-```{r}
+
+```r
 activity <- read.csv("C:\\Users\\judson\\Documents\\R\\dataScienceCoursera\\5. ReproducibleResearch\\activity.csv")
 dim(activity)
+```
+
+```
+## [1] 17568     3
+```
+
+```r
 names(activity)
+```
+
+```
+## [1] "steps"    "date"     "interval"
 ```
 
 The basic data set was not further processed, although other datasets for various analyses were derived from it.
@@ -49,7 +61,8 @@ The intervals range from 0 to 2355 in 5 minute lengths and represent the staring
 
 In much of the remaining analyses, we will want to use functions from the dplyr and lubridate packages.
 
-```{r message=FALSE}
+
+```r
 library(dplyr)
 library(lubridate)
 ```
@@ -65,11 +78,32 @@ Determine the mean total steps taken per day
 
 To apply the mean function to these data (by date) we will have to remove or suppress NA values in the steps variable. First we account for the NAs.
 
-```{r}
+
+```r
 summary(activity$steps)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##    0.00    0.00    0.00   37.38   12.00  806.00    2304
+```
+
+```r
 as.character(unique(activity$date[is.na(activity$steps)]))
+```
+
+```
+## [1] "2012-10-01" "2012-10-08" "2012-11-01" "2012-11-04" "2012-11-09"
+## [6] "2012-11-10" "2012-11-14" "2012-11-30"
+```
+
+```r
 activityCC <- activity[complete.cases(activity),]
 dim(activityCC)
+```
+
+```
+## [1] 15264     3
 ```
 
 We find that there are 2,304 records in which the steps variable is missing (NA). A bit of analysis shows that these NAs all occur on one of the 8 dates shown. The multiplication 8 x 288 = 2,304 accounts for all of the NAs in the steps variable. A curiosity is that the NA "dates" are 2 Mondays, 2 Fridays, and 1 Wednesday, Thursday, Saturday, and Sunday. There is no explanation as to why NAs fall into exact, contiguous 24 hour periods and why they fall on these days of the week. This would be perhaps helpful to know but does not appear to be problematic. We use the dataframe *activityCC*, denoting that it is derived from the original dataframe but contains only the complete cases.
@@ -78,7 +112,8 @@ When we assign the complete cases of activity to the working file *activityCC*, 
 
 Let us produce a histogram of the total number of steps taken each day...
 
-```{r totStepsByDate}
+
+```r
 by_dateCC <- group_by(activityCC, date)
 totStepsByDate <- summarise(by_dateCC, stepSum = sum(steps))
 stepSum <- as.numeric(totStepsByDate$stepSum)
@@ -86,11 +121,28 @@ par(mar=c(4,4,4,4))
 hist(stepSum, breaks = c(0, 4000, 8000, 12000, 16000, 20000, 24000), xlim=c(0,25000), ylim=c(0,25), xlab="Count of Steps", ylab="Frequency in 53 of the 61 Days", main="Total Steps per Day")
 ```
 
+![plot of chunk totStepsByDate](figure/totStepsByDate-1.png) 
+
 ...and find the mean and median values among the complete cases.
 
-```{r totStepsByDateMeanMed}
+
+```r
 mean(stepSum)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median(stepSum)
+```
+
+```
+## [1] 10765
+```
+
+```r
 rm(by_dateCC, totStepsByDate, stepSum)
 ```
 
@@ -107,7 +159,8 @@ Determine the average daily activity pattern
 
 Prepare to make a time series plot of mean steps by interval (across all days).
 
-```{r}
+
+```r
         steps <- as.numeric(activityCC$steps)
         activityCC$steps <- steps
 
@@ -119,18 +172,30 @@ Prepare to make a time series plot of mean steps by interval (across all days).
                 meanStepsByInt <- summarize(steps_byInt, meanSteps = mean(steps))
         dim(meanStepsByInt)
 ```
+
+```
+## [1] 288   2
+```
   
 
 We have the correct dimensions; let us create the time series plot.
 
-```{r}
+
+```r
 plot(meanSteps ~ intOrd, data=meanStepsByInt, type="l", xlab = "Ordinal Position of 5-minute Interval During 24-hour Day", ylab = "Mean Step Within Interval Across All Complete Case Days")
 ```
 
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png) 
+
 Which interval across all days contains the highest average number of steps?
 
-```{r}
+
+```r
 which.max(meanStepsByInt$meanSteps)
+```
+
+```
+## [1] 104
 ```
 
 The maximum occurs in the 104th interval, or beginning at 8:35am.
@@ -148,7 +213,8 @@ We had previously identified the incomplete cases. All of the missing values are
 
 Let us split the data base into complete and incomplete cases, remove the NAs, replacing them with the average steps by interval and recombine. Check that the new database is of the right size.
 
-```{r}
+
+```r
 activityCC <- activity[complete.cases(activity),]
 activityIC <- activity[!complete.cases(activity),]
 x <- unlist(meanStepsByInt[,2])
@@ -156,19 +222,59 @@ replace <- c(x, x, x, x, x, x, x, x)
 activityIC$steps <- replace
 activityRebuilt <- rbind(activityCC, activityIC)
 dim(activityRebuilt)
+```
+
+```
+## [1] 17568     3
+```
+
+```r
 summary(activityRebuilt)
+```
+
+```
+##      steps                date          interval     
+##  Min.   :  0.00   2012-10-01:  288   Min.   :   0.0  
+##  1st Qu.:  0.00   2012-10-02:  288   1st Qu.: 588.8  
+##  Median :  0.00   2012-10-03:  288   Median :1177.5  
+##  Mean   : 37.38   2012-10-04:  288   Mean   :1177.5  
+##  3rd Qu.: 27.00   2012-10-05:  288   3rd Qu.:1766.2  
+##  Max.   :806.00   2012-10-06:  288   Max.   :2355.0  
+##                   (Other)   :15840
+```
+
+```r
 sum(complete.cases(activityRebuilt))
+```
+
+```
+## [1] 17568
+```
+
+```r
 rm(x, replace, activityIC, activityCC)
 ```
 
 With missing values replaced, we recompute the mean and median statistics, using the name addition *AC* to indicate all cases, including those with imputed values.
 
-```{r totStepsByDateMissingImputed}
+
+```r
 by_dateAC <- group_by(activityRebuilt, date)
 totalStepsByDateAC <- summarise(by_dateAC, stepSum=sum(steps))
 stepSum <- as.numeric(totalStepsByDateAC$stepSum)
 mean(stepSum)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median(stepSum)
+```
+
+```
+## [1] 10766.19
 ```
 The mean and median values are identical, but more importantly, they are very close to the values computed by  removing missing values - as expected - we have used the means for substitute values.
   
@@ -183,7 +289,8 @@ Differences in activity patterns between weekdays and weekends
 
 We create a new dataframe with a weekday/weekend factor and add the serial 5-minute interval for smooth plotting in a time series (i.e. interval = 0 5...2355 -> intOrd 0 1...288). Because the dataframe *activityRebuilt* is very regularly laid out, this will require little to no calculation. Our final working dataframe will be called *activityFinal*.
 
-```{r}
+
+```r
 x <- "weekday"
 y <- "weekend"
 xDay <- rep(x, times=288)
@@ -194,12 +301,24 @@ dayPattern <- dayPattern[1:17568]
 timeIntOrd <- rep(1:288, times=61)
 activityFinal <- cbind(activityRebuilt, dayPattern, timeIntOrd)
 dim(activityFinal)
+```
+
+```
+## [1] 17568     5
+```
+
+```r
 names(activityFinal)
+```
+
+```
+## [1] "steps"      "date"       "interval"   "dayPattern" "timeIntOrd"
 ```
 
 The final basic dataframe has been built. For convenience, we will separate into a weekday dataframe and a weekend dataframe. We will take mean steps per time interval for the two separate dataframes and plot them for comparison.
 
-```{r}
+
+```r
 activityFinalWday <- activityFinal[dayPattern=="weekday",]
 activityFinalWend <- activityFinal[dayPattern=="weekend",]
 steps_byIntWday <- group_by(activityFinalWday, timeIntOrd)
@@ -210,6 +329,8 @@ par(mfrow=c(1,2))
 plot(meanSteps ~ timeIntOrd, data=meanStep_byIntWday, type="l", xlab = "Seq. of 5-minute Intervals in 24 Hours", ylab = "Mean Steps on Weekdays", ylim = c(0,250))
 plot(meanSteps ~ timeIntOrd, data=meanStep_byIntWend, type="l", xlab = "Seq. of 5-minute Intervals in 24 Hours", ylab = "Mean Steps on Weekends", ylim = c(0,250))
 ```
+
+![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-1.png) 
 
 The side-by-side time series plots show similarity in levels of activity for weekdays and weekends. Reasons for this may be that
 
